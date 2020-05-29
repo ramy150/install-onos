@@ -17,8 +17,8 @@ function attach_ns_to_ovs() {
 echo "Attaching the namespace $1 to the OVS $2"
 ip link add $3 type veth peer name $4
 ip link set $3 netns $1
-ovs-vsctl add-port $2 $4 -- set Interface $4
-ip netns exec $1 ip addr add $5/24 dev $3
+ovs-vsctl add-port $2 $4 -- set Interface $4 ofport_request=$5
+ip netns exec $1 ip addr add $6/24 dev $3
 ip netns exec $1 ip link set dev $3 up
 ip link set $4 up
 }
@@ -29,8 +29,8 @@ echo "Attaching the OVS $1 to the OVS $2"
 ip link add name $3 type veth peer name $4
 ip link set $3 up
 ip link set $4 up
-ovs-vsctl add-port $1 $3 -- set Interface $3
-ovs-vsctl add-port $2 $4 -- set Interface $4
+ovs-vsctl add-port $1 $3 -- set Interface $3 ofport_request=$5
+ovs-vsctl add-port $2 $4 -- set Interface $4 ofport_request=$5
 }
 
 function attach_ovs_to_sdn() {
@@ -45,9 +45,9 @@ create_ns blue
 create_ovs_bridge br-1
 create_ovs_bridge br-2
 
-attach_ovs_to_ovs br-1 br-2 br-ovs1 br-ovs2
+attach_ovs_to_ovs br-1 br-2 br-ovs1 br-ovs2 1
+attach_ns_to_ovs red br-1 veth-red veth-red-br 2 10.0.0.2
+attach_ns_to_ovs blue br-2 veth-blue veth-blue-br 2 10.0.0.3
 
-attach_ns_to_ovs red br-1 veth-red veth-red-br 10.0.0.2
-attach_ns_to_ovs blue br-2 veth-blue veth-blue-br 10.0.0.3
-
-attach_ovs_to_sdn br-onos
+attach_ovs_to_sdn br-1
+attach_ovs_to_sdn br-2
