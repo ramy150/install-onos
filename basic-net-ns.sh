@@ -24,6 +24,15 @@ ip link set $4 up
 }
 
 
+function attach_ovs_to_ovs() {
+echo "Attaching the OVS $1 to the OVS $2"
+ip link add name $3 type veth peer name $4
+ip link set $3 up
+ip link set $4 up
+ovs-vsctl add-port $1 $3 -- set Interface $3
+ovs-vsctl add-port $2 $4 -- set Interface $4
+}
+
 function attach_ovs_to_sdn() {
 echo "Attaching the OVS bridge to the ONOS controller"
 ovs-vsctl set-controller $1 tcp:$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' $(docker ps -q  --filter ancestor=onosproject/onos)):6653
@@ -33,8 +42,12 @@ ovs-vsctl set-controller $1 tcp:$(docker inspect -f '{{range .NetworkSettings.Ne
 create_ns red
 create_ns blue
 
-create_ovs_bridge br-onos
-attach_ns_to_ovs red br-onos veth-red veth-red-br 10.0.0.2
-attach_ns_to_ovs blue br-onos veth-blue veth-blue-br 10.0.0.3
+create_ovs_bridge br-1
+create_ovs_bridge br-2
+
+attach_ovs_to_ovs br-1 br-2 br-ovs1 br-ovs2
+
+attach_ns_to_ovs red br-1 veth-red veth-red-br 10.0.0.2
+attach_ns_to_ovs blue br-2 veth-blue veth-blue-br 10.0.0.3
 
 attach_ovs_to_sdn br-onos
